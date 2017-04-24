@@ -120,7 +120,7 @@ def output_model():
     f = str(config.get('output'))+'.model.txt'
     fh = open_file(f,'w')
     fh.write('>kmer\n{0}\n'.format(config.get('kmer')))
-    fh.write('>nstates\n{0}\n'.format(config.get('nstates')))
+    fh.write('>nstates\n{0}\n'.format('\n'.join(str(literal) for numeric,literal in sorted(literal_state.items()))))
     fh.write('>alphabet\n{0}\n'.format(config.get('alphabet')))
     fh.write('>start\n{0}\n'.format('\n'.join([ str(_) for _ in config.get('start') ])))
     fh.write('>transitions\n')
