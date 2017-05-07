@@ -12,10 +12,10 @@ output options:
 -v / --verbose          more detailed output
 -o / --ouput prefix     outputs to files prefix.model.txt and prefix.decode.txt
 
-training options:
--b / --train            trains rather than decodes model
--r / --rounds nrounds   trains model for specified number of rounds
--f / --fix s/t/e        fixes any combination of start/transitions/emissions
+fitting options:
+-f / --fit              fit model rather than decode data
+-r / --rounds nrounds   fits model for specified number of rounds
+-l / --lock s/t/e       locks any combination of start/transitions/emissions
 
 override options: (overrides options in modelfile)
 -k / --kmer kmer                                order of model plus 1
@@ -32,7 +32,6 @@ import numpy
 import itertools
 import re
 from os.path import expanduser
-home = expanduser('~')
 
 config = None
 
@@ -41,7 +40,7 @@ def main():
     global config
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hvo:br:f:d:m:k:n:a:s:t:e:', ['help', 'verbose', 'output=', 'train', 'rounds=', 'fix=', 'data=', 'model=', 'kmer=', 'nstates=', 'alphabet=', 'start=', 'transitions=', 'emissions='])
+        opts, args = getopt.getopt(sys.argv[1:], 'hvo:fr:l:d:m:k:n:a:s:t:e:', ['help', 'verbose', 'output=', 'fit', 'rounds=', 'lock=', 'data=', 'model=', 'kmer=', 'nstates=', 'alphabet=', 'start=', 'transitions=', 'emissions='])
     except getopt.GetoptError as err:
         print('unable to disseqd: {0}'.format(err)) # will print something like 'option -a not recognized'
         print(__doc__)
@@ -55,12 +54,12 @@ def main():
             verbose = True
         elif o in ('-o', '--output'):
             output = a
-        elif o in ('-b', '--train'):
-            train = True
+        elif o in ('-f', '--fit'):
+            fit = True
         elif o in ('-r', '--rounds'):
             rounds = a
-        elif o in ('-f', '--fix'):
-            fix = a
+        elif o in ('-l', '--lock'):
+            lock = a
         elif o in ('-d', '--data'):
             datafile = a
         elif o in ('-m', '--model'):
@@ -84,9 +83,9 @@ def main():
     validate_input()
     validate_data()
 
-    if(config.get('train') == True):
+    if(config.get('fit') == True):
         for r in range(config.get('rounds')):
-            print('Training round {0}'.format(r))
+            print('Fitting round {0}'.format(r))
             forward()
             backward()
             gamma()
@@ -155,19 +154,19 @@ def validate_input():
         print('missing --data option')
         sys.exit(2)
 
-    config.setdefault('fix','-')
-    if(re.search('s',config.get('fix')) and re.search('t',config.get('fix')) and re.search('e',config.get('fix'))):
-        print('No training done when fixing all parameters, consider removing at least one or the trainig option.')
+    config.setdefault('lock','-')
+    if(re.search('s',config.get('lock')) and re.search('t',config.get('lock')) and re.search('e',config.get('lock'))):
+        print('No fitting done when locking all parameters, consider removing at least one or the fitting option.')
         sys.exit(2)
-    if(config.get('train')):
+    if(config.get('fit')):
         try:
             default_rounds = 20
             config['rounds'] = int(config.setdefault('rounds',default_rounds))
         except ValueError:
             print('Erroneous rounds option ({0}), defaulting to {1}'.format(config.get('rounds'),default_rounds))
             config['rounds'] = default_rounds
-        print('Training on {0} with {1} rounds. Output written with prefix "{2}"'.format(config.get('datafile'),config.get('rounds'),config.get('output')))
-        [ print('{0} probabilities'.format('Fixing '+x if re.search(x, config.get('fix')) else 'Updating '+x)) for x in ['s','t','e'] ]
+        print('Fitting to {0} with {1} rounds. Output written with prefix "{2}"'.format(config.get('datafile'),config.get('rounds'),config.get('output')))
+        [ print('{0} probabilities'.format('Locking '+x if re.search(x, config.get('lock')) else 'Updating '+x)) for x in ['s','t','e'] ]
     else:
         print('Disseqding {0}. Output written with prefix "{1}"'.format(config.get('datafile'),config.get('output')))
 
@@ -505,9 +504,9 @@ def update():
     """Updates all probabilities unless other specified."""
     global config
 
-    if(not re.search('s',config.get('fix'))): update_start()
-    if(not re.search('t',config.get('fix'))): update_transmissions()
-    if(not re.search('e',config.get('fix'))): update_emissions()
+    if(not re.search('s',config.get('lock'))): update_start()
+    if(not re.search('t',config.get('lock'))): update_transmissions()
+    if(not re.search('e',config.get('lock'))): update_emissions()
     # print('pi',pi,pi.sum(axis=0))
     # print('A',A,A.sum(axis=1))
     # print('B',B.transpose(),B.transpose().sum(axis=0))
