@@ -400,7 +400,7 @@ def read_emissions(f='',s=0, k=2):
     fh = open_file(expanduser(f),'r')
     for line in fh:
         line = line.rstrip('\n')
-        if(re.match(line,'>')):
+        if(re.match('>',line)):
             continue
         else:
             for kmer in range(len(line)-k+1):
