@@ -13,9 +13,8 @@ output options:
 -o / --ouput prefix     outputs to files prefix.model.txt and prefix.decode.txt
 
 fitting options:
--f / --fit              fit model rather than decode data
+-f / --fit ste          fits any combination of start/transitions/emissions
 -r / --rounds nrounds   fits model for specified number of rounds
--l / --lock s/t/e       locks any combination of start/transitions/emissions
 
 override options: (overrides options in modelfile)
 -k / --kmer kmer                                order of model plus 1
@@ -40,7 +39,7 @@ def main():
     global config
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hvo:fr:l:d:m:k:n:a:s:t:e:', ['help', 'verbose', 'output=', 'fit', 'rounds=', 'lock=', 'data=', 'model=', 'kmer=', 'nstates=', 'alphabet=', 'start=', 'transitions=', 'emissions='])
+        opts, args = getopt.getopt(sys.argv[1:], 'hvo:f:r:d:m:k:n:a:s:t:e:', ['help', 'verbose', 'output=', 'fit=', 'rounds=', 'data=', 'model=', 'kmer=', 'nstates=', 'alphabet=', 'start=', 'transitions=', 'emissions='])
     except getopt.GetoptError as err:
         print('unable to disseqd: {0}'.format(err)) # will print something like 'option -a not recognized'
         print(__doc__)
@@ -55,11 +54,9 @@ def main():
         elif o in ('-o', '--output'):
             output = a
         elif o in ('-f', '--fit'):
-            fit = True
+            fit = a
         elif o in ('-r', '--rounds'):
             rounds = a
-        elif o in ('-l', '--lock'):
-            lock = a
         elif o in ('-d', '--data'):
             datafile = a
         elif o in ('-m', '--model'):
@@ -83,7 +80,7 @@ def main():
     validate_input()
     validate_data()
 
-    if(config.get('fit') == True):
+    if(config.get('fit')):
         for r in range(config.get('rounds')):
             print('Fitting round {0}'.format(r))
             forward()
@@ -154,19 +151,19 @@ def validate_input():
         print('missing --data option')
         sys.exit(2)
 
-    config.setdefault('lock','-')
-    if(re.search('s',config.get('lock')) and re.search('t',config.get('lock')) and re.search('e',config.get('lock'))):
-        print('No fitting done when locking all parameters, consider removing at least one or the fitting option.')
-        sys.exit(2)
     if(config.get('fit')):
-        try:
-            default_rounds = 20
-            config['rounds'] = int(config.setdefault('rounds',default_rounds))
-        except ValueError:
-            print('Erroneous rounds option ({0}), defaulting to {1}'.format(config.get('rounds'),default_rounds))
-            config['rounds'] = default_rounds
-        print('Fitting to {0} with {1} rounds. Output written with prefix "{2}"'.format(config.get('datafile'),config.get('rounds'),config.get('output')))
-        [ print('{0} probabilities'.format('Locking '+x if re.search(x, config.get('lock')) else 'Updating '+x)) for x in ['s','t','e'] ]
+        if(re.search('[ste]',config.get('fit'))):
+            try:
+                default_rounds = 20
+                config['rounds'] = int(config.setdefault('rounds',default_rounds))
+            except ValueError:
+                print('Erroneous rounds option ({0}), defaulting to {1}'.format(config.get('rounds'),default_rounds))
+                config['rounds'] = default_rounds
+                print('Fitting to {0} with {1} rounds. Output written with prefix "{2}"'.format(config.get('datafile'),config.get('rounds'),config.get('output')))
+            [ print('{0} probabilities'.format('Updating '+x if re.search(x, config.get('fit')) else 'Locking '+x)) for x in ['s','t','e'] ]
+        else:
+            print('No fitting done when specifying none of s/t/e parameters.')
+            sys.exit(2)
     else:
         print('Disseqding {0}. Output written with prefix "{1}"'.format(config.get('datafile'),config.get('output')))
 
@@ -504,9 +501,9 @@ def update():
     """Updates all probabilities unless other specified."""
     global config
 
-    if(not re.search('s',config.get('lock'))): update_start()
-    if(not re.search('t',config.get('lock'))): update_transmissions()
-    if(not re.search('e',config.get('lock'))): update_emissions()
+    if(re.search('s',config.get('fit'))): update_start()
+    if(re.search('t',config.get('fit'))): update_transmissions()
+    if(re.search('e',config.get('fit'))): update_emissions()
     # print('pi',pi,pi.sum(axis=0))
     # print('A',A,A.sum(axis=1))
     # print('B',B.transpose(),B.transpose().sum(axis=0))
