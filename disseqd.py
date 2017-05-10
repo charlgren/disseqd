@@ -191,16 +191,12 @@ def validate_data():
 def read_model():
     """Reads model from file."""
     global config
-    # global pi,A,B
-    global literal_transition,literal_emission,numeric_transition,numeric_emission
+    global emission
     header = None
     pi = None
     A = None
     B = None
-    literal_transition = None
-    literal_emission = None
-    numeric_transition = None
-    numeric_emission = None
+    emission = None
 
     print('Reading model from {0}'.format(config.get('modelfile')))
     fh = open_file(config.get('modelfile'),'r')
@@ -212,8 +208,8 @@ def read_model():
             header = line[1:]
             if(header == 'nstates'): nstates = list()
             if(header == 'start'): pi = list()
-            if(header == 'transitions'): A = list(); literal_transition = list()
-            if(header == 'emissions'): B = dict(); literal_emission = list()
+            if(header == 'transitions'): A = list(); # literal_transition = list()
+            if(header == 'emissions'): B = list(); emission = list() # literal_emission = list()
             continue
         if(header == 'kmer' and not config.get('kmer')):
             config.setdefault('kmer',line)
@@ -239,8 +235,9 @@ def read_model():
             continue
         if(header == 'emissions' and not config.get('emissions')):
             tmp = line.split('\t')
-            literal_emission += [tmp[0]]
-            B[tmp[0]] = tmp[1:]
+            emission += [tmp[0]]
+            # B[tmp[0]] = tmp[1:]
+            B += [tmp[1:]]
             print('read emissions: {0}: {1}'.format(tmp[0],tmp[1:]))
             continue
     fh.close()
@@ -254,7 +251,7 @@ def validate_model():
     """Validates model parameters."""
     global config
     global pi,A,B
-    global literal_state,literal_transition,literal_emission,numeric_state,numeric_transition,numeric_emission
+    global literal_state,literal_transition,literal_emission,numeric_state,numeric_transition,numeric_emission,emission
 
     if(not config.get('kmer')):
         print('unable to disseqd: no option "kmer" given')
@@ -342,26 +339,27 @@ def validate_model():
         print('unable to disseqd: no option "emissions" given')
         sys.exit(2)
     elif(isinstance(B,str) and re.search(r',',B)):
-        B = dict.fromkeys(list(B.split(',')),[])
-    if(len(B.keys()) > 0):
-        if(len(list(B.values())[0]) == config.get('nstates')):
-            discard = [ x for x in B.keys() if not x in literal_emission ]
+        emission = list(B.split(','))
+    if(emission):
+        if(len(B[0]) == config.get('nstates')):
+            tmp = dict(zip(emission,B))
+            discard = [ x for x in emission if not x in literal_emission ]
             print('discarding entries: ',discard)
-            include = [ x for x in literal_emission if not x in B.keys() ]
+            include = [ x for x in literal_emission if not x in emission ]
             print('including entries: ',include)
             for x in discard:
-                del B[x]
+                del tmp[x]
             for x in include:
-                B[x] = list(itertools.repeat(sys.float_info.epsilon,config.get('nstates')))
+                tmp[x] = list(itertools.repeat(sys.float_info.epsilon,config.get('nstates')))
             try:
-                B = [ [ float(y) for y in B[x] ] for x in sorted(B) ]
+                tmp = [ [ float(y) for y in tmp[x] ] for x in sorted(tmp) ]
             except ValueError:
-                print('unable to disseqd: option "emission" must be {0} probabilities per emission'.format(config.get('nstates')))
+                print('unable to disseqd: option "emissions" must be {0} probabilities per emission'.format(config.get('nstates')))
                 sys.exit(2)
-            B = numpy.array(B)
-        elif(len(B.keys()) == config.get('nstates')):
-            files = list(itertools.chain(list(B.keys())))
-            B = numpy.transpose(numpy.array([ read_emissions(f,literal_transition[t],config.get('kmer')) for f,t in zip(files,rng) ]))
+            B = numpy.array(tmp)
+        elif(len(emission) == config.get('nstates')):
+            # files = list(itertools.chain(list(B.keys())))
+            B = numpy.transpose(numpy.array([ read_emissions(f,literal_transition[t],config.get('kmer')) for f,t in zip(emission,rng) ]))
         else:
             print('unable to disseqd: the different states need unique filenames')
             sys.exit(2)
