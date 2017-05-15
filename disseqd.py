@@ -238,16 +238,18 @@ def validate_start():
     if(pi is None): # None
         config.get('verbose') and print('No option "start" given, defaulting to uniform probabilities {0}.'.format(1/config.get('nstates')))
         pi = default_pi
-    if(len(pi) == config.get('nstates')): # list of probabilities
+    if(len(pi) == 1 or len(pi) == config.get('nstates')): # list of probabilities
         try:
             pi = [ float(x) for x in pi ]
         except ValueError:
-            print('option "start" must be {0} probabilities, not {1}.'.format(config.get('nstates'),pi))
+            print('option "start" must be probabilities, not {1}.'.format(pi))
     else: # misspecified
-        config.get('verbose') and print('Option "start" must be {0} probabilities, not {1}, defaulting to uniform probabilities {2}.'.format(config.get('nstates'),pi,1/config.get('nstates')))
+        config.get('verbose') and print('Option "start" must be probabilities, not {0}, defaulting to uniform probabilities {1}.'.format(pi,1/config.get('nstates')))
         pi = default_pi
-    pi = numpy.array(pi)
-    config['start'] = pi
+    pi *= config.get('nstates')
+    pi = numpy.array(pi[0:config.get('nstates')])
+    # pi = numpy.array(pi)
+    config['start'] = normalize(pi)
 
     config.get('verbose') and print('start: {0}'.format(config.get('start')))
 
