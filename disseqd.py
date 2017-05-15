@@ -485,6 +485,7 @@ def decode():
         v = [ v[a] + str(b) for a,b in zip(numpy.argmax(tmpl,axis=0),range(config.get('nstates'))) ]
 
     v = v[numpy.argmax(ll)]
+    v = v+v[-1]+v[-1]
     ll = numpy.max(ll)
 
 def normalize(prob,desc=''):
