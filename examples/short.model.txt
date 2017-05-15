@@ -1,0 +1,15 @@
+>kmer
+2
+>nstates
+2
+>alphabet
+ACGT
+>start
+0.5
+0.5
+>transitions
+10
+20
+>emissions
+examples/cpg.txt
+examples/noncpg.txt
