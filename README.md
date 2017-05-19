@@ -61,7 +61,7 @@ And four multi-choice options can be specified. Short version:
 >transitions # expected lengths of kmer tracts per state
 10
 20
->emissions # sequences files for obtaining emission probabilities
+>emissions # sequence files for obtaining emission probabilities
 examples/cpg.txt
 examples/noncpg.txt
 ```
@@ -103,7 +103,7 @@ The model file can contain any of the 6 different parameters specified above. As
 PREFIX.decode.txt contains the decoded observations:
 ```python
 >loglikelihood:-72.21101909	CPG:0	NCPG:1
-00000000000000000000000000000001111111111111111111111111111111111
+000000000000000000000000000000011111111111111111111111111111111111
 ```
 #### Model
 PREFIX.model.txt contains the full model, long version (see Input).
@@ -147,6 +147,6 @@ python disseqd.py -h
 
 
 ## License
-
+Released under the [MIT License](https://github.com/charlgren/disseqd/blob/develop/LICENSE).
 
 ## Links
