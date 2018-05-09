@@ -339,6 +339,10 @@ def validate_data():
         obs += line
     fh.close()
 
+    # convert non-alphabet characters in obs to N
+    obs = re.sub(''.join(['[^']+[config.get('alphabet')]+[']']),'N',obs.upper())
+    # print(obs)
+
     config.setdefault('obs',obs)
     config.setdefault('nobs',len(obs)-config.get('kmer')+1)
     # print(config.get('obs'))
@@ -495,6 +499,7 @@ def normalize(prob,desc=''):
     if(desc=='emissions'):
     # reshape needed for emission probabilities of >0-order HMMs (kmer>1)
         prob = prob.reshape((len(config.get('alphabet'))**(config.get('kmer')-1)*config.get('nstates'),len(config.get('alphabet'))))
+    # Innocent RuntimeWarning when emissions initialized to zero counts
     prob = (prob.T / prob.sum(axis=prob.ndim-1)).T
     # asserts no start or transition of only zeros
     prob[numpy.isnan(prob)] = 1/len(config.get('alphabet'))
