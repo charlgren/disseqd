@@ -47,10 +47,11 @@ def main():
             xi()
             update()
             decode()
+            print(ll)
             config.get('verbose') and print(v,ll)
     else:
         decode()
-    print(v,ll)
+    # print(v,ll)
     output_model()
 
 def format_config():
@@ -489,7 +490,8 @@ def decode():
         v = [ v[a] + str(b) for a,b in zip(numpy.argmax(tmpl,axis=0),range(config.get('nstates'))) ]
 
     v = v[numpy.argmax(ll)]
-    v = v+v[-1]*(config.get('kmer')-1)
+    # v = v+v[-1]*(config.get('kmer')-1) # append
+    v = v[0]*(config.get('kmer')-1)+v # prepend
     ll = numpy.max(ll)
 
 def normalize(prob,desc=''):
@@ -513,7 +515,7 @@ def normalize(prob,desc=''):
         prob = prob.reshape((config.get('nstates'),len(literal_emission)))
     return prob
 
-def read_emissions(f='',s=0, k=2):
+def read_emissions(f='',s=0,k=2):
     """Reads emissions from file."""
     global config
     global literal_emission
@@ -561,6 +563,28 @@ def output_model():
     [ fh.write('\t{0}:{1}'.format(literal,numeric)) for numeric,literal in sorted(literal_state.items()) ]
     fh.write('\n'+v+'\n')
     fh.close()
+
+    for i in range(config.get('nstates')):
+        f = str(config.get('output'))+'.{0}.gff'.format(literal_state.get(i))
+        config.get('verbose') and print('Writing converted data to file {0}.'.format(f))
+        fh = open_file(f,'w')
+        starts = find_all_pat('[^{0}]{0}'.format(i),v)
+        if v[0]=='{0}'.format(i): starts = itertools.chain([0],starts)
+        ends = find_all_pat('{0}[^{0}]'.format(i),v)
+        if v[-1]=='{0}'.format(i): ends = itertools.chain(ends,[len(v)])
+        # defaults to 0 if state not found
+        if starts==None: starts = [0]
+        if ends==None: ends = [0]
+        [ fh.write('{0}\t{1}\t{2}\n'.format('obs',s,e)) for s,e in zip(starts,ends) ]
+        fh.close()
+
+def find_all_pat(pat,s):
+    """Returns an iterator over indexes of occurences of pattern in string."""
+    return (m.start() for m in re.finditer(pat, s))
+
+def find_all_chr(chr,s):
+    """Returns an iterator over indexes of occurences of character in string."""
+    return (i for i, ltr in enumerate(s) if ltr == chr)
 
 def open_file(f,mode='r'):
     """Returns a filehandle to the file, opened in specified mode."""
