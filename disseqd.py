@@ -344,6 +344,7 @@ def validate_data():
     obs = re.sub(''.join(['[^']+[config.get('alphabet')]+[']']),'N',obs.upper())
     # print(obs)
 
+    config.setdefault('name',header)
     config.setdefault('obs',obs)
     config.setdefault('nobs',len(obs)-config.get('kmer')+1)
     # print(config.get('obs'))
@@ -575,7 +576,7 @@ def output_model():
         # defaults to 0 if state not found
         if starts==None: starts = [0]
         if ends==None: ends = [0]
-        [ fh.write('{0}\t{1}\t{2}\n'.format('obs',s,e)) for s,e in zip(starts,ends) ]
+        [ fh.write('{0}\t{1}\t{2}\n'.format(config.get('name'),s,e)) for s,e in zip(starts,ends) ]
         fh.close()
 
 def find_all_pat(pat,s):
